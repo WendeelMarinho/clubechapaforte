@@ -25,3 +25,6 @@ Thumbs.db
 npm-debug.log
 yarn-error.log
 *.bu.php
+
+# Deployment / backup archives (GitHub file limit 100 MB)
+/public_html.zip
