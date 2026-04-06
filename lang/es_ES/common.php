@@ -333,6 +333,7 @@ return [
     "analytics" => "Analíticas",
     "total_purchased" => "Total comprado",
     "points_issued" => "Puntos emitidos",
+    "points_removed" => "Puntos retirados",
     "points_redeemed" => "Puntos canjeados",
     "last_points_issued" => "Últimos puntos emitidos",
     "last_view" => "Última vista",

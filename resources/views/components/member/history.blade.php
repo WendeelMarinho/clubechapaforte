@@ -28,10 +28,10 @@
                     <x-ui.icon icon="coins" class="w-3 h-3" />
                 @elseif($transaction->event == 'staff_credited_points')
                     <x-ui.icon icon="coins" class="w-3 h-3" />
+                @elseif($transaction->event == 'staff_debited_points')
+                    <x-ui.icon icon="coins" class="w-3 h-3" />
                 @elseif($transaction->event == 'staff_redeemed_points_for_reward')
                     <x-ui.icon icon="gift" class="w-3 h-3" />
-                @elseif($transaction->event == 'staff_debited_points')
-                    <x-ui.icon icon="arrow-trending-down" class="w-3 h-3" />
                 @endif
             </span>
             <div class="flex justify-between w-full">
@@ -43,10 +43,10 @@
                     <span class="text-sm font-medium mr-2 px-2.5 py-0.5 rounded ml-1 @if($transactionExpired) bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-300 @else bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300 @endif">{{ $transaction->purchase_amount_formatted }}</span>
                     @elseif($transaction->event == 'staff_credited_points')
                     {!! trans('common.points_issued') !!}
+                    @elseif($transaction->event == 'staff_debited_points')
+                        {!! trans('common.points_removed') !!}
                     @elseif($transaction->event == 'staff_redeemed_points_for_reward')
                         {!! trans('common.reward') !!}
-                    @elseif($transaction->event == 'staff_debited_points')
-                        {!! trans('common.staff_points_debited') !!}
                     @endif
                 </h3>
                 <time class="ml-2 mb-2 text-right text-sm font-normal leading-none mt-2 order-last @if($transactionExpired) text-gray-300 dark:text-gray-600 @else text-gray-400 dark:text-gray-500 @endif">{{ $transaction->created_at->diffForHumans() }}</time>

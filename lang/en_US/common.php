@@ -334,6 +334,7 @@ return [
     "analytics" => "Analytics",
     "total_purchased" => "Total purchased",
     "points_issued" => "Points issued",
+    "points_removed" => "Points removed",
     "points_redeemed" => "Points redeemed",
     "last_points_issued" => "Last points issued",
     "last_view" => "Last view",

@@ -65,8 +65,9 @@ class TransactionService
      *
      * This function fetches all transactions by default. However, 
      * if $showExpiredAndUsedTransactions is set to false, the returned collection will
-     * exclude transactions of events 'initial_bonus_points', 'staff_credited_points_for_purchase'
-     * and `staff_credited_points` where points have either expired or have been fully used.
+     * exclude credit transactions ('initial_bonus_points', 'staff_credited_points_for_purchase',
+     * 'staff_credited_points') where points have expired or been fully used, but will always
+     * include redemptions and staff debits ('staff_redeemed_points_for_reward', 'staff_debited_points').
      *
      * @param Member $member The member associated with the transactions.
      * @param Card $card The card associated with the transactions.
@@ -85,20 +86,19 @@ class TransactionService
                             ->where('card_id', $card->id)
                             ->orderBy('created_at', 'desc');
 
-        // If expired and fully used transactions should be excluded, adjust the query.
-        if ($showExpiredAndUsedTransactions == false) {
-            $query->where(function ($query) use($member, $card) {
-                // Select transactions where the expiry date is in the future 
-                // and not all points have been used.
-                $query->where('expires_at', '>=', Carbon::now())
-                    ->whereColumn('points', '>', 'points_used')
-                    ->where('member_id', $member->id)
-                    ->where('card_id', $card->id);
-                // Only apply the above conditions to these specific event types.
-            })->whereIn('event', ['initial_bonus_points', 'staff_credited_points_for_purchase', 'staff_credited_points'])
-            ->orWhereNotIn('event', ['initial_bonus_points', 'staff_credited_points_for_purchase', 'staff_credited_points'])
-            ->where('member_id', $member->id)
-            ->where('card_id', $card->id);
+        // If expired and fully used credit buckets should be hidden, keep audit-style rows visible.
+        if ($showExpiredAndUsedTransactions === false) {
+            $creditEvents = ['initial_bonus_points', 'staff_credited_points_for_purchase', 'staff_credited_points'];
+            $alwaysShowEvents = ['staff_redeemed_points_for_reward', 'staff_debited_points'];
+
+            $query->where(function ($q) use ($creditEvents, $alwaysShowEvents) {
+                $q->whereIn('event', $alwaysShowEvents)
+                    ->orWhere(function ($q2) use ($creditEvents) {
+                        $q2->whereIn('event', $creditEvents)
+                            ->where('expires_at', '>=', Carbon::now())
+                            ->whereColumn('points', '>', 'points_used');
+                    });
+            });
         }
 
         // Execute the query and return the collection of transactions.

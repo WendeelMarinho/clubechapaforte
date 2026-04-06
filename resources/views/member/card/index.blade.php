@@ -77,7 +77,7 @@
                         <x-member.rewards :card="$card" :show-claimable="true" />
                     </x-slot>
                     <x-slot name="tab2">
-                        <x-member.history class="mt-6" :card="$card" :member="auth('member')->user() ?? null" :show-expired-and-used-transactions="false" />
+                        <x-member.history class="mt-6" :card="$card" :member="auth('member')->user() ?? null" :show-notes="true" :show-attachments="true" :show-expired-and-used-transactions="false" />
                     </x-slot>
                     <x-slot name="tab3">
                         <div class="mt-6 format format-sm sm:format-base lg:format-md dark:format-invert">

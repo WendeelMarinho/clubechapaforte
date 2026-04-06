@@ -333,6 +333,7 @@ return [
     "analytics" => "Analyse",
     "total_purchased" => "Totaal gekocht",
     "points_issued" => "Punten uitgegeven",
+    "points_removed" => "Punten verwijderd",
     "points_redeemed" => "Ingewisselde punten",
     "last_points_issued" => "Laatste uitgegeven punten",
     "last_view" => "Laatste weergave",

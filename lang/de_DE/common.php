@@ -333,6 +333,7 @@ return [
     "analytics" => "Analytics",
     "total_purchased" => "Gesamter Einkauf",
     "points_issued" => "Ausgestellte Punkte",
+    "points_removed" => "Punkte entfernt",
     "points_redeemed" => "Eingelöste Punkte", 
     "last_points_issued" => "Zuletzt ausgestellte Punkte",
     "last_view" => "Letzte Ansicht",
