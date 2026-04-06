@@ -21,7 +21,10 @@
                 </a>
             @endif
             @if($card && $member)
-                <a href="{{ route('staff.earn.points', ['member_identifier' => $member->unique_identifier, 'card_identifier' => $card->unique_identifier]) }}" class="mb-6 btn-primary btn-lg flex">{{ trans('common.add_transaction') }}</a>
+                <div class="mb-6 flex flex-col gap-3">
+                    <a href="{{ route('staff.earn.points', ['member_identifier' => $member->unique_identifier, 'card_identifier' => $card->unique_identifier]) }}" class="btn-primary btn-lg flex justify-center">{{ trans('common.add_transaction') }}</a>
+                    <a href="{{ route('staff.deduct.points', ['member_identifier' => $member->unique_identifier, 'card_identifier' => $card->unique_identifier]) }}" class="btn-secondary btn-lg flex justify-center">{{ trans('common.remove_points') }}</a>
+                </div>
             @endif
             @if($member)
                <x-member.member-card class="mb-6" :member="$member" />

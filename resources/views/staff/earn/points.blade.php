@@ -182,10 +182,18 @@
                     :links="false"
                     :show-qr="false"
                 />
-                <a href="{{ route('member.card', ['card_id' => $card->id]) }}" target="_blank" class="mt-4 flex items-center text-link">
-                    <x-ui.icon icon="arrow-top-right-on-square" class="w-5 h-5 mr-2"/>
-                    {{ trans('common.view_card_on_website') }}
-                </a>
+                <div class="mt-4 flex flex-col gap-2">
+                    @if($member)
+                    <a href="{{ route('staff.deduct.points', ['member_identifier' => $member->unique_identifier, 'card_identifier' => $card->unique_identifier]) }}" class="flex items-center text-link">
+                        <x-ui.icon icon="arrow-trending-down" class="w-5 h-5 mr-2"/>
+                        {{ trans('common.remove_points_from_balance') }}
+                    </a>
+                    @endif
+                    <a href="{{ route('member.card', ['card_id' => $card->id]) }}" target="_blank" class="flex items-center text-link">
+                        <x-ui.icon icon="arrow-top-right-on-square" class="w-5 h-5 mr-2"/>
+                        {{ trans('common.view_card_on_website') }}
+                    </a>
+                </div>
             @else
                 <div class="format format-sm sm:format-base lg:format-md dark:format-invert">
                     <h3>{{ trans('common.card_not_found') }}</h3>

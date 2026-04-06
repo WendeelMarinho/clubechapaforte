@@ -12,7 +12,13 @@
     <ol {{ $attributes->except('class') }} class="relative border-l border-gray-200 dark:border-gray-700 ml-6 {{ $attributes->get('class') }}">
         @foreach($transactions as $transaction)
         @php
-        $transactionExpired = ($transaction->reward_points === null && ($transaction->expires_at->isPast() || $transaction->points == $transaction->points_used)) ? true : false;
+        if (in_array($transaction->event, ['staff_redeemed_points_for_reward', 'staff_debited_points'], true)) {
+            $transactionExpired = false;
+        } elseif ($transaction->reward_points === null && $transaction->expires_at) {
+            $transactionExpired = $transaction->expires_at->isPast() || ((int) $transaction->points === (int) $transaction->points_used);
+        } else {
+            $transactionExpired = false;
+        }
         @endphp
         <li class="mb-10 ml-6">
             <span class="absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-8 ring-gray-50 dark:ring-gray-900 @if($transactionExpired) bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 @else bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-300 @endif">
@@ -24,6 +30,8 @@
                     <x-ui.icon icon="coins" class="w-3 h-3" />
                 @elseif($transaction->event == 'staff_redeemed_points_for_reward')
                     <x-ui.icon icon="gift" class="w-3 h-3" />
+                @elseif($transaction->event == 'staff_debited_points')
+                    <x-ui.icon icon="arrow-trending-down" class="w-3 h-3" />
                 @endif
             </span>
             <div class="flex justify-between w-full">
@@ -37,6 +45,8 @@
                     {!! trans('common.points_issued') !!}
                     @elseif($transaction->event == 'staff_redeemed_points_for_reward')
                         {!! trans('common.reward') !!}
+                    @elseif($transaction->event == 'staff_debited_points')
+                        {!! trans('common.staff_points_debited') !!}
                     @endif
                 </h3>
                 <time class="ml-2 mb-2 text-right text-sm font-normal leading-none mt-2 order-last @if($transactionExpired) text-gray-300 dark:text-gray-600 @else text-gray-400 dark:text-gray-500 @endif">{{ $transaction->created_at->diffForHumans() }}</time>
@@ -48,7 +58,7 @@
                 @if(in_array($transaction->event, ['staff_redeemed_points_for_reward']))
                     {{ $transaction->reward_title }}
                 @endif
-                @if(in_array($transaction->event, ['initial_bonus_points', 'staff_credited_points_for_purchase', 'staff_credited_points']))
+                @if(in_array($transaction->event, ['initial_bonus_points', 'staff_credited_points_for_purchase', 'staff_credited_points']) && $transaction->expires_at)
                     @if($transaction->expires_at->isPast() && $transaction->points_used == 0)
                         {!! trans('common.points_expired', ['points' => '<span class=\'format-number\'>' . $transaction->points . '</span>', 'dateDiffFromNow' => $transaction->expires_at->diffForHumans()]) !!}
                     @elseif($transaction->expires_at->isPast() && $transaction->points_used > 0)

@@ -138,6 +138,24 @@ class AnalyticsService
     }
 
     /**
+     * Staff manual deduction of points (adjustment).
+     */
+    public function addStaffDebitAnalytic(Card $card, Staff $staff, Member $member, int $points): void
+    {
+        Analytic::create([
+            'partner_id' => $card->partner->id,
+            'member_id' => $member->id,
+            'staff_id' => $staff->id,
+            'card_id' => $card->id,
+            'reward_id' => null,
+            'points' => $points,
+            'event' => 'staff_debit_points',
+            'created_at' => Carbon::now('UTC'),
+            'updated_at' => Carbon::now('UTC'),
+        ]);
+    }
+
+    /**
      * Get the user's time zone if they're logged in, otherwise get the default time zone
      *
      * @return DateTimeZone

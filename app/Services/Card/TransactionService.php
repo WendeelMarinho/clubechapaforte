@@ -15,6 +15,7 @@ use Money\Parser\DecimalMoneyParser;
 use Carbon\Carbon;
 use App\Notifications\Member\RewardClaimed;
 use App\Notifications\Member\PointsReceived;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class TransactionService
@@ -102,6 +103,39 @@ class TransactionService
 
         // Execute the query and return the collection of transactions.
         return $query->get();
+    }
+
+    /**
+     * Consume points from a member's non-expired credit transactions (FIFO by created_at).
+     */
+    protected function consumeMemberCardPointsFifo(Member $member, Card $card, int $amount): void
+    {
+        $transactions = Transaction::where('member_id', $member->id)
+            ->where('card_id', $card->id)
+            ->where('expires_at', '>', Carbon::now())
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $remaining = $amount;
+
+        foreach ($transactions as $transaction) {
+            $unusedTransactionPoints = $transaction->points - $transaction->points_used;
+
+            if ($unusedTransactionPoints <= 0 || $remaining <= 0) {
+                continue;
+            }
+
+            $pointsToUse = min($remaining, $unusedTransactionPoints);
+
+            $transaction->points_used += $pointsToUse;
+            $transaction->save();
+
+            $remaining -= $pointsToUse;
+
+            if ($remaining <= 0) {
+                break;
+            }
+        }
     }
 
     /**
@@ -269,42 +303,7 @@ class TransactionService
             return false;
         }
 
-        /**
-         * Updates a member's points balance based on transactions that haven't yet expired. 
-         * This method iterates through all valid transactions and credits reward points.
-         * Points are used from older transactions first (First-In-First-Out)
-         */
-        $transactions = Transaction::where('member_id', $member->id)
-            ->where('card_id', $card->id)
-            ->where('expires_at', '>', Carbon::now())
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        $remainingRewardPoints = $reward->points;
-
-        foreach ($transactions as $transaction) {
-            $unusedTransactionPoints = $transaction->points - $transaction->points_used;
-            
-            // Skip the transaction if all points are used or no more reward points left to credit
-            if ($unusedTransactionPoints <= 0 || $remainingRewardPoints <= 0) {
-                continue;
-            }
-            
-            // Calculate the points to be used from the current transaction
-            $pointsToUse = min($remainingRewardPoints, $unusedTransactionPoints);
-            
-            // Update the transaction's used points and persist the changes
-            $transaction->points_used += $pointsToUse;
-            $transaction->save();
-
-            // Decrease the remaining reward points
-            $remainingRewardPoints -= $pointsToUse;
-            
-            // Break the loop if all reward points are credited
-            if ($remainingRewardPoints <= 0) {
-                break;
-            }
-        }
+        $this->consumeMemberCardPointsFifo($member, $card, $reward->points);
 
         // Data for transaction record
         $data = [
@@ -352,5 +351,71 @@ class TransactionService
         if (!$created_at) $member->notify(new RewardClaimed($member, $reward->points, $card, $reward));
 
         return $transaction;
+    }
+
+    /**
+     * Remove points from a member's balance (staff adjustment), using the same FIFO rules as reward redemption.
+     *
+     * @return Transaction|bool False if the member does not have enough points.
+     */
+    public function deductPoints(
+        string $member_identifier,
+        string $card_identifier,
+        Staff $staff,
+        int $points,
+        $image = null,
+        ?string $note = null
+    ): Transaction|bool {
+        $member = $this->memberService->findActiveByIdentifier($member_identifier);
+        $card = $this->cardService->findActiveCardByIdentifier($card_identifier);
+        $partner = $card->partner;
+
+        if (!$staff->isRelatedToCard($card)) {
+            abort(401);
+        }
+
+        if ($points < 1 || $card->getMemberBalance($member) < $points) {
+            return false;
+        }
+
+        return DB::transaction(function () use ($member, $card, $staff, $partner, $points, $image, $note) {
+            $this->consumeMemberCardPointsFifo($member, $card, $points);
+
+            $now = Carbon::now('UTC');
+
+            $data = [
+                'staff_id' => $staff->id,
+                'member_id' => $member->id,
+                'card_id' => $card->id,
+                'partner_name' => $partner->name,
+                'partner_email' => $partner->email,
+                'staff_name' => $staff->name,
+                'staff_email' => $staff->email,
+                'card_title' => $card->getTranslations('head'),
+                'currency' => $card->currency,
+                'event' => 'staff_debited_points',
+                'points' => -$points,
+                'note' => $note,
+                'points_per_currency' => $card->points_per_currency,
+                'min_points_per_purchase' => $card->min_points_per_purchase,
+                'max_points_per_purchase' => $card->max_points_per_purchase,
+                'created_by' => $partner->id,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            $transaction = Transaction::create($data);
+
+            if ($image) {
+                $transaction->addMediaFromRequest('image')->toMediaCollection('image');
+            }
+
+            $card->number_of_points_redeemed += $points;
+            $card->save();
+
+            $this->analyticsService->addStaffDebitAnalytic($card, $staff, $member, $points);
+
+            return $transaction;
+        });
     }
 }

@@ -75,6 +75,10 @@ Route::prefix('{locale}')->group(function () {
             Route::get('earn/{member_identifier}/{card_identifier}', 'Staff\EarnController@showEarnPoints')->name('staff.earn.points');
             Route::post('earn/{member_identifier}/{card_identifier}', 'Staff\EarnController@postEarnPoints')->name('staff.earn.points.post');
 
+            // Deduct / remove points
+            Route::get('deduct/{member_identifier}/{card_identifier}', 'Staff\DeductController@showDeductPoints')->name('staff.deduct.points');
+            Route::post('deduct/{member_identifier}/{card_identifier}', 'Staff\DeductController@postDeductPoints')->name('staff.deduct.points.post');
+
             // Claim
             Route::get('claim/{member_identifier}/{card_id}/{reward_id}', 'Staff\RewardController@showClaimReward')->name('staff.claim.reward')->middleware('signed:consume');
             Route::post('claim/{member_identifier}/{card_id}/{reward_id}', 'Staff\RewardController@postClaimReward')->name('staff.claim.reward.post');
